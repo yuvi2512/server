@@ -52,11 +52,11 @@ io.on("connection", (socket) => {
     socket.broadcast.to(room).emit("answer", { answer });
   });
 
-  // Handle ICE candidates
   socket.on("candidate", ({ candidate, room }) => {
-    console.log(`📡 ICE candidate received from ${socket.id}, forwarding to room: ${room}`);
-    socket.broadcast.to(room).emit("candidate", { candidate });
+    console.log(`📡 ICE Candidate from ${socket.id}, forwarding to room: ${room}`);
+    socket.to(room).emit("candidate", { candidate });  // Use `to(room)` instead of `broadcast.to(room)`
   });
+  
 
   // Handle user disconnect
   socket.on("disconnect", () => {
