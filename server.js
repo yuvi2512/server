@@ -16,40 +16,57 @@ const io = new Server(server, {
 let waitingUsers = [];
 
 io.on("connection", (socket) => {
-  console.log("Client connected:", socket.id);
+  console.log("✅ Client connected:", socket.id);
 
+  // Matchmaking logic
   socket.on("findMatch", () => {
     if (waitingUsers.length > 0) {
-      const matchedUser = waitingUsers.pop();
-      const room = `${socket.id}-${matchedUser.id}`;
+      // Get the first waiting user
+      const matchedUser = waitingUsers.shift(); 
+      const room = matchedUser.id; // Use the first user's ID as the room
 
+      // Join both users to the same room
       socket.join(room);
-      matchedUser.join(room);
+      io.sockets.sockets.get(matchedUser.id)?.join(room);
 
+      console.log(`🔗 Match found! Room: ${room}`);
+
+      // Notify both users that they are matched
       io.to(room).emit("matched", { room });
     } else {
-      waitingUsers.push(socket);
+      // No users waiting, push this user into the queue
+      waitingUsers.push({ id: socket.id });
+      console.log(`🕐 User added to waiting list: ${socket.id}`);
     }
   });
 
-  socket.on("offer", (data) => {
-    socket.broadcast.to(data.room).emit("offer", data.offer);
+  // Handle WebRTC offer
+  socket.on("offer", ({ offer, room }) => {
+    console.log(`📩 Offer received from ${socket.id}, forwarding to room: ${room}`);
+    socket.broadcast.to(room).emit("offer", { offer });
   });
 
-  socket.on("answer", (data) => {
-    socket.broadcast.to(data.room).emit("answer", data.answer);
+  // Handle WebRTC answer
+  socket.on("answer", ({ answer, room }) => {
+    console.log(`📩 Answer received from ${socket.id}, forwarding to room: ${room}`);
+    socket.broadcast.to(room).emit("answer", { answer });
   });
 
-  socket.on("candidate", (data) => {
-    socket.broadcast.to(data.room).emit("candidate", data.candidate);
+  // Handle ICE candidates
+  socket.on("candidate", ({ candidate, room }) => {
+    console.log(`📡 ICE candidate received from ${socket.id}, forwarding to room: ${room}`);
+    socket.broadcast.to(room).emit("candidate", { candidate });
   });
 
+  // Handle user disconnect
   socket.on("disconnect", () => {
-    console.log("Client disconnected:", socket.id);
+    console.log(`❌ Client disconnected: ${socket.id}`);
+
+    // Remove from waiting list
     waitingUsers = waitingUsers.filter((user) => user.id !== socket.id);
   });
 });
 
 server.listen(4000, () => {
-  console.log("WebSocket server running on port 4000");
+  console.log("🚀 WebSocket server running on port 4000");
 });
