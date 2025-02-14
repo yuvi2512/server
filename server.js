@@ -54,7 +54,7 @@ io.on("connection", (socket) => {
 
   socket.on("candidate", ({ candidate, room }) => {
     console.log(`📡 ICE Candidate from ${socket.id}, forwarding to room: ${room}`);
-    socket.to(room).emit("candidate", { candidate });  // Use `to(room)` instead of `broadcast.to(room)`
+    socket.broadcast.to(room).emit("candidate", { candidate }); // Use broadcast.to
   });
   
 
